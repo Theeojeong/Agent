@@ -1,0 +1,10 @@
+services:
+  agent:
+    build:
+      context: ..      # 프로젝트 루트가 빌드 컨텍스트
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env        # 루트의 .env 에서 OPENAI_API_KEY 로드
+    volumes:
+      - ../:/app
+    
