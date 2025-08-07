@@ -21,7 +21,7 @@ vector_store = Chroma(
     embedding_function=embeddings,
     collection_name="criminal_law",
 )
-retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
 
 def make_prompt(row) -> str:
@@ -34,7 +34,7 @@ def make_prompt(row) -> str:
         f"(D) {row['D']}",
     ])
 
-    docs = retriever.get_relevant_documents(query)
+    docs = retriever.invoke(query)
     ctx_block = "\n---\n".join(d.page_content.strip() for d in docs)
 
     return (

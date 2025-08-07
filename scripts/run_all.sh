@@ -8,7 +8,7 @@ python src/download_data.py
 
 # 2
 echo "🔧 KB 재구축 중"
-python src/langchain.py
+python src/build_db.py
 
 # 3
 echo "📝 배치 입력 생성 중"

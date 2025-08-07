@@ -1,17 +1,19 @@
-"""langchain.py
+"""build_kb.py
 
 한국 형법·형사소송법 PDF → 텍스트 분할 → OpenAI 임베딩(text-embedding-small) → Chroma 벡터스토어 구축
 
-이 스크립트는 기존 build_kb.py 를 대체한다. 실행 후
-    data/processed/chroma/  아래에 벡터 인덱스가 저장된다.
+'src/langchain.py' 로 작성되어 있던 기존 스크립트를 파일명 변경하여
+Python 패키지 `langchain` 과의 이름 충돌 문제를 해결했습니다.
+실행 후 `data/processed/chroma/` 아래에 벡터 인덱스가 저장됩니다.
 """
+from __future__ import annotations
+
 from pathlib import Path
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-
 
 DOC_DIR = Path("documents")
 PDF_FILES = [
@@ -30,13 +32,14 @@ splitter = RecursiveCharacterTextSplitter(
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 
-
 def load_documents() -> list:
     """PDF 파일을 로드하여 텍스트 청크 리스트 반환"""
     documents = []
     for pdf_path in PDF_FILES:
         if not pdf_path.exists():
-            raise FileNotFoundError(f"❌ {pdf_path} 가 존재하지 않습니다. PDF 를 documents/ 폴더에 넣어주세요.")
+            raise FileNotFoundError(
+                f"❌ {pdf_path} 가 존재하지 않습니다. PDF 를 documents/ 폴더에 넣어주세요."
+            )
 
         loader = PyPDFLoader(str(pdf_path))
         pages = loader.load()  # 각 페이지가 Document 객체
@@ -44,7 +47,6 @@ def load_documents() -> list:
             # 페이지 단위 → splitter 로 추가 분할
             documents.extend(splitter.split_documents([page]))
     return documents
-
 
 
 def build_db():
@@ -56,7 +58,7 @@ def build_db():
         documents=docs,
         embedding=embeddings,
         collection_name="criminal_law",
-        persist_directory=str(PERSIST_DIR)
+        persist_directory=str(PERSIST_DIR),
     )
     vector_store.persist()
     print(f"✅ Chroma 인덱스 저장 완료 → {PERSIST_DIR}")
