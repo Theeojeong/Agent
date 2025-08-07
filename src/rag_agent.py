@@ -5,7 +5,7 @@ import json, faiss, numpy as np
 from openai import OpenAI
 from utils import embed_query, get_topk_context
 
-CHAT_MODEL = "gpt-4o-mini"
+llm = "gpt-4o-mini"
 
 # FAISS 초기화 (컨테이너 구동 시 1회)
 index = faiss.read_index("data/processed/kb.index")
@@ -30,10 +30,10 @@ def answer_one(sample: dict, k: int = 3) -> str:
     )
 
     resp = client.chat.completions.create(
-        model=CHAT_MODEL,
+        model=llm,
         messages=[{"role": "system", "content": system},
                   {"role": "user", "content": user_msg}],
         temperature=0
     )
     text = resp.choices[0].message.content.strip().upper()
-    return text[0]  # 'A' …
+    return text[0]

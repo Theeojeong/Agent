@@ -5,7 +5,7 @@ def load_answers():
     df = pd.read_parquet("data/raw/kmmlu_test.parquet").reset_index(drop=True)
     # 숫자를 문자로 변환: 1->A, 2->B, 3->C, 4->D
     answer_mapping = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}
-    return {str(i): answer_mapping[ans] for i, ans in enumerate(df["answer"])}  # "0":"A", ...
+    return {str(i): answer_mapping[ans] for i, ans in enumerate(df["answer"])} 
 
 def extract_answer(response_text):
     """응답 텍스트에서 A, B, C, D 중 하나를 추출"""
@@ -39,9 +39,9 @@ def main():
     print(f"KMMLU Criminal-Law accuracy: {acc:.2f}%")
 
     # 리포트 파일 저장
-    with open("report.txt", "w") as f:
-        f.write(f"Accuracy: {acc:.2f}%\n")
-    print("✅ saved report.txt")
+    with open("benchmark.txt", "w") as f:
+        f.write(f"점수: {acc:.2f}%\n")
+    print("✅ saved benchmark.txt")
 
 if __name__ == "__main__":
     main()
