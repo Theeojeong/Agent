@@ -1,55 +1,84 @@
-import json, pandas as pd, faiss, pathlib
-from utils import get_topk_context, embed_query
-from openai import OpenAI
-import numpy as np
+"""make_batch_input.py
+
+KMMLU Criminal-Law 테스트셋을 읽어 OpenAI Batch API용 input JSONL 생성.
+LangChain-Chroma 벡터스토어( data/processed/chroma/ )에서 관련 조문을 검색하여
+프롬프트에 포함한다.
+"""
+import json
+from pathlib import Path
+
+import pandas as pd
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
 
 llm = "gpt-4o-mini"
-KB_INDEX = faiss.read_index("data/processed/kb.index")
-KB_TEXTS = [json.loads(l)["text"] for l in open("data/processed/chunks.jsonl", encoding="utf-8")]
+CHROMA_DIR = "data/processed/chroma"
 
-def make_prompt(row, k=5):  # k를 3에서 5로 증가
+
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+vector_store = Chroma(
+    persist_directory=CHROMA_DIR,
+    embedding_function=embeddings,
+    collection_name="criminal_law",
+)
+retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+
+
+def make_prompt(row) -> str:
+    """문제 + 선택지 + RAG 컨텍스트를 하나의 프롬프트 문자열로 생성"""
     query = row["question"]
     choices = "\n".join([
         f"(A) {row['A']}",
         f"(B) {row['B']}",
         f"(C) {row['C']}",
-        f"(D) {row['D']}"
+        f"(D) {row['D']}",
     ])
-    ctxs = get_topk_context(query, KB_INDEX, KB_TEXTS, k)
-    ctx_block = "\n---\n".join(ctxs)
-    
-    return f"""다음은 형법 문제입니다. 주어진 참고 자료를 바탕으로 정확한 답을 선택해주세요.
-문제: {query}
-선택지:
-{choices}
-참고 자료:
-{ctx_block}
-위의 참고 자료를 바탕으로 가장 정확한 답을 A, B, C, D 중에서 하나만 선택하여 답해주세요. 
-답변은 반드시 A, B, C, D 중 하나의 알파벳만 작성해주세요.
-예시:
-- 문제가 "형법상 살인의 정의는?"이고 참고 자료에서 "살인은 사람을 사망하게 하는 행위"라고 나와 있다면
-- 답변: A (만약 A가 "사람을 사망하게 하는 행위"라면)"""
+
+    docs = retriever.get_relevant_documents(query)
+    ctx_block = "\n---\n".join(d.page_content.strip() for d in docs)
+
+    return (
+        "다음은 형법 문제입니다. 주어진 참고 자료를 바탕으로 정확한 답을 선택해주세요.\n"
+        f"문제: {query}\n"
+        "선택지:\n"
+        f"{choices}\n"
+        "참고 자료:\n"
+        f"{ctx_block}\n\n"
+        "위의 자료를 바탕으로 가장 정확한 답을 A, B, C, D 중에서 하나만 선택하여 답해주세요.\n"
+        "답변은 반드시 A, B, C, D 중 하나의 알파벳만 작성해주세요."
+    )
+
 
 def main():
     df = pd.read_parquet("data/raw/kmmlu_test.parquet")
-    with open("batch_input.jsonl", "w", encoding="utf-8") as out:
+    out_path = Path("batch_input.jsonl")
+    with out_path.open("w", encoding="utf-8") as out:
         for i, row in df.iterrows():
             body = {
                 "model": llm,
                 "messages": [
-                    {"role": "system", "content": "당신은 한국 형법 전문가입니다. 주어진 참고 자료를 바탕으로 정확한 법률 판단을 내려야 합니다. 답변은 반드시 A, B, C, D 중 하나의 알파벳만 작성해주세요."},
-                    {"role": "user", "content": make_prompt(row)}
+                    {
+                        "role": "system",
+                        "content": "당신은 한국 형법 전문가입니다. 주어진 참고 자료를 바탕으로 정확한 법률 판단을 내려야 합니다. 답변은 반드시 A, B, C, D 중 하나의 알파벳만 작성해주세요.",
+                    },
+                    {"role": "user", "content": make_prompt(row)},
                 ],
-                "temperature": 0
+                "temperature": 0,
             }
-            out.write(json.dumps({
-                "custom_id": str(i),
-                "method": "POST",
-                "url": "/v1/chat/completions",
-                "body": body
-            }, ensure_ascii=False) + "\n")
-            print(f"바디 ----> {body} <----")
-    print("✅ batch_input.jsonl 생성:", len(df), "행")
+            out.write(
+                json.dumps(
+                    {
+                        "custom_id": str(i),
+                        "method": "POST",
+                        "url": "/v1/chat/completions",
+                        "body": body,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    print(f"✅ batch_input.jsonl 생성: {len(df)} 행 → {out_path}")
+
 
 if __name__ == "__main__":
     main()
