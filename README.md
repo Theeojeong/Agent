@@ -11,7 +11,6 @@
 │   ├── raw/             # RAG에 사용될 원본(raw) 데이터
 │   └── processed/       # 정제·분할된 데이터 (벡터화 대상)
 ├── scripts/             # 실행 스크립트 (run_all.sh 등)
-├── logs/                # 실행 중 생성되는 로그 파일
 ├── requirements.txt     # Python 의존성 목록
 ├── .gitignore
 └── README.md            # 프로젝트 안내 문서
@@ -31,5 +30,5 @@ $ ./scripts/run_all.sh
 
 ---
 
-> 작성: 2025-08-06
+> 작성: 2025-08-08
 
