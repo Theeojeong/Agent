@@ -22,7 +22,7 @@ def main():
     client = OpenAI()
 
     text = RAW_TXT.read_text(encoding="utf-8")
-    chunks = chunk_text(text, max_tokens=256)
+    chunks = chunk_text(text, max_tokens=512)  # 256에서 512로 증가
 
     embeds = []
     for ch in tqdm(chunks, desc="Embedding KB"):
