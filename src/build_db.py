@@ -1,17 +1,7 @@
-"""build_kb.py
-
-한국 형법·형사소송법 PDF → 텍스트 분할 → OpenAI 임베딩(text-embedding-small) → Chroma 벡터스토어 구축
-
-'src/langchain.py' 로 작성되어 있던 기존 스크립트를 파일명 변경하여
-Python 패키지 `langchain` 과의 이름 충돌 문제를 해결했습니다.
-실행 후 `data/processed/chroma/` 아래에 벡터 인덱스가 저장됩니다.
-"""
 from __future__ import annotations
-
 from pathlib import Path
-
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader  
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 
@@ -23,13 +13,14 @@ PDF_FILES = [
 PERSIST_DIR = Path("data/processed/chroma")
 PERSIST_DIR.mkdir(parents=True, exist_ok=True)
 
-# LangChain 컴포넌트
+
 splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1500,
-    chunk_overlap=100,
+    chunk_size=600,
+    chunk_overlap=120,
     separators=["\n\n", "\n", " "]
 )
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+embedding_function = OpenAIEmbeddings(model="text-embedding-3-small")
 
 
 def load_documents() -> list:
@@ -37,33 +28,44 @@ def load_documents() -> list:
     documents = []
     for pdf_path in PDF_FILES:
         if not pdf_path.exists():
-            raise FileNotFoundError(
-                f"❌ {pdf_path} 가 존재하지 않습니다. PDF 를 documents/ 폴더에 넣어주세요."
-            )
-
-        loader = PyPDFLoader(str(pdf_path))
-        pages = loader.load()  # 각 페이지가 Document 객체
+            raise FileNotFoundError(f"❌ {pdf_path} 가 존재하지 않습니다.")
+        loader = PyMuPDFLoader(str(pdf_path))
+        pages = loader.load()
         for page in pages:
-            # 페이지 단위 → splitter 로 추가 분할
             documents.extend(splitter.split_documents([page]))
     return documents
 
 
-def build_db():
+def main():
     """Chroma 벡터스토어 구축 후 retriever 반환"""
     docs = load_documents()
     print(f"📄 문서 청크 수: {len(docs)}  / 임베딩 생성 중 …")
 
     vector_store = Chroma.from_documents(
         documents=docs,
-        embedding=embeddings,
+        embedding=embedding_function,
         collection_name="criminal_law",
         persist_directory=str(PERSIST_DIR),
     )
     vector_store.persist()
-    print(f"✅ Chroma 인덱스 저장 완료 → {PERSIST_DIR}")
-    return vector_store.as_retriever(search_kwargs={"k": 3})
+    print("✅ Chroma 인덱스 저장 완료")
+
+    retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+    return retriever
+
+
+def get_retriever(k: int, search_type: str):
+    vector_store = Chroma(
+        persist_directory=str(PERSIST_DIR),
+        embedding_function=embedding_function,
+        collection_name="criminal_law",
+    )
+    search_kwargs = {"k": k}
+    if search_type == "mmr":
+        # MMR일 때만 기본 하이퍼파라미터 적용
+        search_kwargs.update({"fetch_k": max(20, k * 5), "lambda_mult": 0.7})
+    return vector_store.as_retriever(search_type=search_type, search_kwargs=search_kwargs)
 
 
 if __name__ == "__main__":
-    build_db()
+    main()

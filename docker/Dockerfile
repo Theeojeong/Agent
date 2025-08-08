@@ -10,5 +10,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# CRLF 제거 & 실행권한 부여 (윈도우에서 체크아웃된 경우 대비)
+RUN sed -i 's/\r$//' scripts/run_all.sh && chmod +x scripts/run_all.sh
+
 # 3) 기본 실행: 전체 파이프라인
 ENTRYPOINT ["bash", "scripts/run_all.sh"]
+
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
