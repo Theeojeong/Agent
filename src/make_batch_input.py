@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
 llm = "gpt-4o-mini"
@@ -21,7 +21,11 @@ vector_store = Chroma(
     embedding_function=embeddings,
     collection_name="criminal_law",
 )
-retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+
+retriever = vector_store.as_retriever(
+    search_type="mmr",
+    search_kwargs={"k": 4, "fetch_k": 40, "lambda_mult": 0.7}
+)
 
 
 def make_prompt(row) -> str:
@@ -35,7 +39,7 @@ def make_prompt(row) -> str:
     ])
 
     docs = retriever.invoke(query)
-    ctx_block = "\n---\n".join(d.page_content.strip() for d in docs)
+    content_block = "\n---\n".join(d.page_content.strip() for d in docs)
 
     return (
         "다음은 형법 문제입니다. 주어진 참고 자료를 바탕으로 정확한 답을 선택해주세요.\n"
@@ -43,7 +47,7 @@ def make_prompt(row) -> str:
         "선택지:\n"
         f"{choices}\n"
         "참고 자료:\n"
-        f"{ctx_block}\n\n"
+        f"{content_block}\n\n"
         "위의 자료를 바탕으로 가장 정확한 답을 A, B, C, D 중에서 하나만 선택하여 답해주세요.\n"
         "답변은 반드시 A, B, C, D 중 하나의 알파벳만 작성해주세요."
     )
@@ -64,6 +68,7 @@ def main():
                     {"role": "user", "content": make_prompt(row)},
                 ],
                 "temperature": 0,
+                "max_tokens": 2
             }
             out.write(
                 json.dumps(
