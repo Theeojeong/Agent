@@ -37,7 +37,7 @@ def main():
     acc = correct / total * 100
     print(f"KMMLU Criminal-Law accuracy: {acc:.2f}%")
 
-    # 리포트 파일 저장
+    # 벤치마크 점수 파일 저장
     with open("benchmark.txt", "w") as f:
         f.write(f"점수: {acc:.2f}%\n")
     print("✅ benchmark.txt가 저장되었습니다.")

@@ -24,7 +24,7 @@ def create_and_wait(input_path: str = "batch_input.jsonl",
     # 상태 확인
     while True:
         status = client.batches.retrieve(batch.id).status
-        print("⌛ 배치 작업 중:", status)
+        print("⌛ 배치 상태 ->", status)
         if status in {"failed", "expired"}:
             raise RuntimeError(f"배치 런타임 에러: {status}")
         if status == "completed":

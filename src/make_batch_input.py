@@ -1,9 +1,3 @@
-"""make_batch_input.py
-
-KMMLU Criminal-Law 테스트셋을 읽어 OpenAI Batch API용 input JSONL 생성.
-LangChain-Chroma 벡터스토어( data/processed/chroma/ )에서 관련 조문을 검색하여
-프롬프트에 포함한다.
-"""
 import json
 from pathlib import Path
 

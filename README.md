@@ -1,15 +1,15 @@
 ## 빠른 시작
 ```bash
-# 1. .env 환경변수 설정 (호스트)
+# 1. .env OPENAI_API_KEY 설정
 $ export OPENAI_API_KEY="sk-..."
 
-# 2. 이미지 빌드 & 파이프라인 실행 (batch api 응답시간 약 30-40 분)
+# 2. 이미지 빌드 & 파이프라인 실행 (batch api 응답시간 약 60-73분, 그 외 구축 및 평가 작업시간 3-4분)
 $ docker compose -f docker/docker-compose.yml up --build
 
 # 3. 실행 로그가 다음 단계를 순차적으로 출력
 1. 데이터 다운로드 중(KMMLU test parquet 저장)
 
-2. dB 구축 중(PDF → 임베딩 → Chroma 인덱스)
+2. db 구축 중(PDF → 임베딩 → Chroma 인덱스)
 
 3. 배치 입력 생성 중(batch_input.jsonl 작성)
 
