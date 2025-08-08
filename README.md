@@ -18,6 +18,13 @@ $ docker compose -f docker/docker-compose.yml up --build
 5. 평가 중(batch_output.jsonl → 정확도 계산)
 
 6. 완료
+
+
+# 벤치마크 점수
+파이프라인은 Docker 컨테이너에서 문제 없이 전 단계(데이터 다운로드 → KB 구축 → Batch API 제출)까지 자동 실행되는 것을 확인하였습니다. 다만 OpenAI Batch API의 응답 지연으로 인해 제출 마감 시각까지 최종 벤치마크 점수를 확인하지 못한 점 양해 부탁드립니다.
+
+첫 파이프라인 구축을 완료한 시점의 벤치마크 점수입니다.
+점수: 38.00%
 ```
 
 
